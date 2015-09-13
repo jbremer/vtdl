@@ -38,7 +38,7 @@ fi
 for part in $*; do
     if echo $part|grep -Eq '^[a-fA-F0-9]{32,64}$'; then
         if wget -q "https://www.virustotal.com/vtapi/v2/file/download?apikey=$APIKEY&hash=$part" -O "$part"; then
-            echo "Downloaded sample by hash: $part"
+            echo "Downloaded sample by the hash: $part"
         else
             echo "Not a known hash: $part"
             vt_search "$part"
