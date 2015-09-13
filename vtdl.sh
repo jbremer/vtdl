@@ -8,6 +8,11 @@ if [ "$#" -eq 0 ]; then
     exit 1
 fi
 
+if ! hash curl || ! hash wget || ! hash jq; then
+    echo "The following commands are required by this script: curl wget jq."
+    exit 1
+fi
+
 # Fetch the apikey and the query.
 APIKEY="$(cat ~/.vtdl)"
 
