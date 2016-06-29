@@ -2,6 +2,7 @@
 # Simple Python script for searching & downloading samples from VirusTotal.
 
 import gevent.monkey
+import gevent.queue
 gevent.monkey.patch_all()
 
 import click
@@ -12,6 +13,7 @@ VT_SEARCH = "https://www.virustotal.com/vtapi/v2/file/search"
 VT_DOWNLOAD = "https://www.virustotal.com/vtapi/v2/file/download"
 
 apikey = open(os.path.expanduser("~/.vtdl"), "rb").read().strip()
+queue = gevent.queue.Queue()
 
 @click.group()
 def vtdl():
@@ -37,16 +39,25 @@ def search(query, count):
 
     download(hashes[:count])
 
-def _download_helper(h):
-    r = requests.get(VT_DOWNLOAD, params={"apikey": apikey, "hash": h})
-    open(h, "wb").write(r.content)
+def _download_helper():
+    while not queue.empty():
+        h = queue.get()
+        if not h:
+            break
+
+        r = requests.get(VT_DOWNLOAD, params={"apikey": apikey, "hash": h})
+        open(h, "wb").write(r.content)
 
 @vtdl.command()
 @click.argument("hashes", nargs=-1)
 def download(hashes):
-    workers = []
     for h in hashes:
-        workers.append(gevent.spawn(_download_helper, h))
+        queue.put(h)
+
+    workers = [
+        gevent.spawn(_download_helper)
+        for _ in xrange(128)
+    ]
     gevent.joinall(workers)
 
 if __name__ == "__main__":
