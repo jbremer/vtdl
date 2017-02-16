@@ -34,6 +34,9 @@ def search(query, count):
     while len(hashes) < count:
         hashes.extend(r.json()["hashes"])
 
+        if "offset" not in r.json():
+            break
+
         data["offset"] = r.json()["offset"]
         r = requests.post(VT_SEARCH, data=data)
 
