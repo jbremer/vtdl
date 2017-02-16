@@ -56,7 +56,7 @@ def download(hashes):
 
     workers = [
         gevent.spawn(_download_helper)
-        for _ in xrange(128)
+        for _ in xrange(32)
     ]
     gevent.joinall(workers)
 
