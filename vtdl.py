@@ -48,6 +48,10 @@ def _download_helper():
         if not h:
             break
 
+        if os.path.exists(h):
+            print "skipping..", h
+            continue
+
         r = requests.get(VT_DOWNLOAD, params={"apikey": apikey, "hash": h})
         open(h, "wb").write(r.content)
 
