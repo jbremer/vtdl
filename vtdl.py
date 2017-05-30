@@ -8,6 +8,7 @@ gevent.monkey.patch_all()
 import click
 import os.path
 import requests
+import time
 
 VT_SEARCH = "https://www.virustotal.com/vtapi/v2/file/search"
 VT_DOWNLOAD = "https://www.virustotal.com/vtapi/v2/file/download"
@@ -43,10 +44,16 @@ def search(query, count):
     download(hashes[:count])
 
 def _download_helper():
+    t = time.time()
     while not queue.empty():
         h = queue.get()
         if not h:
             break
+
+        if h == "wait":
+            time.sleep(max(0, 60 - time.time() + t))
+            t = time.time()
+            continue
 
         if os.path.exists(h):
             print "skipping..", h
@@ -57,13 +64,16 @@ def _download_helper():
 
 @vtdl.command()
 @click.argument("hashes", nargs=-1)
-def download(hashes):
-    for h in hashes:
+def download(hashes, workercount=32):
+    for idx, h in enumerate(hashes):
+        if idx and idx % 500 == 0:
+            for _ in xrange(workercount):
+                queue.put("wait")
         queue.put(h)
 
     workers = [
         gevent.spawn(_download_helper)
-        for _ in xrange(32)
+        for _ in xrange(workercount)
     ]
     gevent.joinall(workers)
 
